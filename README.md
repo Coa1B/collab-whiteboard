@@ -28,7 +28,7 @@ client/   Vite + React + react-konva frontend
 - [x] Freehand pen + eraser + color picker (strokes synced on mouse-up)
 - [ ] Live stroke streaming with throttling/batching
 - [ ] Sticky notes (add, edit, move)
-- [ ] Live cursors
+- [x] Live cursors (throttled to 50ms)
 - [ ] Conflict resolution for concurrent edits/moves
 - [ ] PostgreSQL persistence for board state
 - [ ] Stretch: Redis adapter for multi-instance scaling

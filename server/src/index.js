@@ -30,7 +30,19 @@ io.on('connection', (socket) => {
     socket.to(boardId).emit('stroke:add', stroke);
   });
 
-  // TODO: cursor:move (throttled), note:add / note:update, conflict resolution
+  // Cursors are ephemeral: relayed to the room, never stored.
+  socket.on('cursor:move', ({ x, y, name, color }) => {
+    const { boardId } = socket.data;
+    if (!boardId) return;
+    socket.to(boardId).emit('cursor:move', { id: socket.id, x, y, name, color });
+  });
+
+  socket.on('disconnect', () => {
+    const { boardId } = socket.data;
+    if (boardId) socket.to(boardId).emit('cursor:leave', socket.id);
+  });
+
+  // TODO: note:add / note:update, conflict resolution
 });
 
 server.listen(PORT, () => console.log(`Server listening on :${PORT}`));
