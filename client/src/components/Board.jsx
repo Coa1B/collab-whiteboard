@@ -66,7 +66,7 @@ export default function Board({ boardId, tool, color }) {
     drawing.current = { ...drawing.current, points: [...drawing.current.points, x, y] };
     pointBatcher.push(x, y);
     const current = drawing.current;
-    setStrokes((s) => [...s.slice(0, -1), current]);
+    setStrokes((s) => s.map((st) => (st.id === current.id ? current : st)));
   };
 
   const handleMouseUp = () => {
