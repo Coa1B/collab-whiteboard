@@ -6,3 +6,8 @@ body { margin: 0; font-family: system-ui, sans-serif; overflow: hidden; }
   padding: 8px; background: #fff; border: 1px solid #ddd; border-radius: 8px;
 }
 .toolbar button[aria-pressed='true'] { background: #222; color: #fff; }
+.note-editor {
+  position: absolute; z-index: 5;
+  padding: 10px; border: 2px solid #222; border-radius: 4px;
+  background: #fff59d; font: 14px system-ui, sans-serif; resize: none; outline: none;
+}

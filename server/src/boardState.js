@@ -1,5 +1,5 @@
 // In-memory board state, keyed by board id.
-// TODO: persist to PostgreSQL; add sticky notes and conflict resolution.
+// TODO: persist to PostgreSQL.
 class BoardStore {
   constructor() {
     this.boards = new Map();
@@ -29,10 +29,90 @@ class BoardStore {
     return false;
   }
 
+  // --- Sticky notes ---
+  //
+  // Conflict resolution uses two layers:
+  //  1. Locks: a user must hold a note's lock to drag or edit it, so two
+  //     people can't manipulate the same note at once.
+  //  2. Versions: every commit names the version it was based on. If the
+  //     note changed since (e.g. the client hadn't yet received another
+  //     user's commit), the commit is rejected and the client reverts.
+  // Notes are replaced, never mutated, so snapshots stay consistent.
+
+  addNote(boardId, { id, x, y, text = '', color }) {
+    const note = { id, x, y, text, color, version: 1, lockedBy: null };
+    this.get(boardId).notes[id] = note;
+    return note;
+  }
+
+  lockNote(boardId, noteId, owner) {
+    const notes = this.get(boardId).notes;
+    const note = notes[noteId];
+    if (!note) return { ok: false, reason: 'not_found' };
+    if (note.lockedBy && note.lockedBy.id !== owner.id) {
+      return { ok: false, reason: 'locked', note };
+    }
+    notes[noteId] = { ...note, lockedBy: owner };
+    return { ok: true, note: notes[noteId] };
+  }
+
+  // Drag positions are transient: only the lock holder may broadcast them,
+  // and nothing is stored until the drag is committed.
+  canMove(boardId, noteId, ownerId) {
+    const note = this.get(boardId).notes[noteId];
+    return Boolean(note && note.lockedBy && note.lockedBy.id === ownerId);
+  }
+
+  commitNote(boardId, noteId, ownerId, baseVersion, changes) {
+    const notes = this.get(boardId).notes;
+    const note = notes[noteId];
+    if (!note) return { ok: false, reason: 'not_found' };
+    if (!note.lockedBy || note.lockedBy.id !== ownerId) {
+      return { ok: false, reason: 'locked', note };
+    }
+    if (baseVersion !== note.version) {
+      // Stale edit: drop it and release the lock so the note isn't stuck.
+      notes[noteId] = { ...note, lockedBy: null };
+      return { ok: false, reason: 'stale', note: notes[noteId] };
+    }
+    notes[noteId] = { ...note, ...pickNoteChanges(changes), version: note.version + 1, lockedBy: null };
+    return { ok: true, note: notes[noteId] };
+  }
+
+  unlockNote(boardId, noteId, ownerId) {
+    const notes = this.get(boardId).notes;
+    const note = notes[noteId];
+    if (!note || !note.lockedBy || note.lockedBy.id !== ownerId) return null;
+    notes[noteId] = { ...note, lockedBy: null };
+    return notes[noteId];
+  }
+
+  // Frees every lock held by a user, e.g. when they disconnect mid-drag.
+  releaseLocks(boardId, ownerId) {
+    const notes = this.get(boardId).notes;
+    const released = [];
+    for (const note of Object.values(notes)) {
+      if (note.lockedBy && note.lockedBy.id === ownerId) {
+        notes[note.id] = { ...note, lockedBy: null };
+        released.push(notes[note.id]);
+      }
+    }
+    return released;
+  }
+
   snapshot(boardId) {
     const { strokes, notes } = this.get(boardId);
     return { strokes: [...strokes], notes: { ...notes } };
   }
+}
+
+// Only position and text are client-editable; ignore anything else.
+function pickNoteChanges(changes = {}) {
+  const out = {};
+  if (Number.isFinite(changes.x)) out.x = changes.x;
+  if (Number.isFinite(changes.y)) out.y = changes.y;
+  if (typeof changes.text === 'string') out.text = changes.text.slice(0, 1000);
+  return out;
 }
 
 module.exports = { BoardStore };

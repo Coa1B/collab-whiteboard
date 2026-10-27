@@ -44,12 +44,57 @@ io.on('connection', (socket) => {
     socket.to(boardId).emit('cursor:move', { id: socket.id, x, y, name, color });
   });
 
-  socket.on('disconnect', () => {
+  // Sticky notes. Writes are acknowledged so the client can roll back
+  // when the server rejects them; see BoardStore for the conflict rules.
+  const reply = (ack, result) => typeof ack === 'function' && ack(result);
+
+  socket.on('note:add', (note, ack) => {
     const { boardId } = socket.data;
-    if (boardId) socket.to(boardId).emit('cursor:leave', socket.id);
+    if (!boardId) return;
+    const created = store.addNote(boardId, note);
+    io.to(boardId).emit('note:upsert', created);
+    reply(ack, { ok: true, note: created });
   });
 
-  // TODO: note:add / note:update, conflict resolution
+  socket.on('note:lock', ({ id, name, color }, ack) => {
+    const { boardId } = socket.data;
+    if (!boardId) return;
+    const res = store.lockNote(boardId, id, { id: socket.id, name, color });
+    if (res.ok) io.to(boardId).emit('note:upsert', res.note);
+    reply(ack, res);
+  });
+
+  socket.on('note:move', ({ id, x, y }) => {
+    const { boardId } = socket.data;
+    if (!boardId || !store.canMove(boardId, id, socket.id)) return;
+    socket.to(boardId).emit('note:moving', { id, x, y });
+  });
+
+  socket.on('note:commit', ({ id, baseVersion, changes }, ack) => {
+    const { boardId } = socket.data;
+    if (!boardId) return;
+    const res = store.commitNote(boardId, id, socket.id, baseVersion, changes);
+    // On success or a stale rejection the stored note changed (new version
+    // or released lock), so everyone gets the authoritative copy.
+    if (res.ok || res.reason === 'stale') io.to(boardId).emit('note:upsert', res.note);
+    reply(ack, res);
+  });
+
+  socket.on('note:unlock', ({ id }) => {
+    const { boardId } = socket.data;
+    if (!boardId) return;
+    const note = store.unlockNote(boardId, id, socket.id);
+    if (note) io.to(boardId).emit('note:upsert', note);
+  });
+
+  socket.on('disconnect', () => {
+    const { boardId } = socket.data;
+    if (!boardId) return;
+    socket.to(boardId).emit('cursor:leave', socket.id);
+    for (const note of store.releaseLocks(boardId, socket.id)) {
+      socket.to(boardId).emit('note:upsert', note);
+    }
+  });
 });
 
 server.listen(PORT, () => console.log(`Server listening on :${PORT}`));

@@ -1,4 +1,4 @@
-const TOOLS = ['pen', 'eraser'];
+const TOOLS = ['pen', 'eraser', 'note'];
 
 export default function Toolbar({ tool, color, onToolChange, onColorChange }) {
   return (
