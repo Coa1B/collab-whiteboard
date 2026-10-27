@@ -23,11 +23,18 @@ io.on('connection', (socket) => {
     socket.emit('board:snapshot', store.snapshot(boardId));
   });
 
-  socket.on('stroke:add', (stroke) => {
+  // Strokes stream while being drawn: start, then batched point updates.
+  socket.on('stroke:start', (stroke) => {
     const { boardId } = socket.data;
     if (!boardId) return;
     store.addStroke(boardId, stroke);
-    socket.to(boardId).emit('stroke:add', stroke);
+    socket.to(boardId).emit('stroke:start', stroke);
+  });
+
+  socket.on('stroke:points', ({ id, points }) => {
+    const { boardId } = socket.data;
+    if (!boardId || !store.appendPoints(boardId, id, points)) return;
+    socket.to(boardId).emit('stroke:points', { id, points });
   });
 
   // Cursors are ephemeral: relayed to the room, never stored.

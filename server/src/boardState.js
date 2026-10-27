@@ -17,6 +17,18 @@ class BoardStore {
     return stroke;
   }
 
+  // Appends points to an in-progress stroke. Returns false for unknown strokes.
+  appendPoints(boardId, strokeId, points) {
+    const { strokes } = this.get(boardId);
+    for (let i = strokes.length - 1; i >= 0; i--) {
+      if (strokes[i].id === strokeId) {
+        strokes[i] = { ...strokes[i], points: strokes[i].points.concat(points) };
+        return true;
+      }
+    }
+    return false;
+  }
+
   snapshot(boardId) {
     const { strokes, notes } = this.get(boardId);
     return { strokes: [...strokes], notes: { ...notes } };

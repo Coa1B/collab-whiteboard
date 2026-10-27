@@ -25,8 +25,8 @@ client/   Vite + React + react-konva frontend
 ## Roadmap (v1)
 
 - [x] Project scaffold, socket connection, join snapshot
-- [x] Freehand pen + eraser + color picker (strokes synced on mouse-up)
-- [ ] Live stroke streaming with throttling/batching
+- [x] Freehand pen + eraser + color picker
+- [x] Live stroke streaming (points batched every 40ms)
 - [ ] Sticky notes (add, edit, move)
 - [x] Live cursors (throttled to 50ms)
 - [ ] Conflict resolution for concurrent edits/moves
