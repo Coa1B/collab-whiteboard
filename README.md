@@ -8,8 +8,7 @@ A real-time shared canvas where multiple users draw and collaborate at the same 
 
 ```bash
 npm install
-npm run dev:server   # http://localhost:4000
-npm run dev:client   # http://localhost:5173
+npm run dev   # server on :4000 and client on :5173 together
 npm test
 ```
 
