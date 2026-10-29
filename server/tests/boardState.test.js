@@ -123,3 +123,24 @@ describe('sticky note conflict resolution', () => {
     expect(store.lockNote('a', 'n1', bob).ok).toBe(true);
   });
 });
+
+describe('hydrate', () => {
+  test('loads saved strokes and notes into a board', () => {
+    const store = new BoardStore();
+    expect(store.has('a')).toBe(false);
+    store.hydrate('a', {
+      strokes: [{ id: 's1', points: [0, 0] }],
+      notes: { n1: { id: 'n1', x: 1, y: 2, text: 'saved', version: 3, lockedBy: null } },
+    });
+    expect(store.has('a')).toBe(true);
+    expect(store.snapshot('a').strokes).toHaveLength(1);
+    expect(store.snapshot('a').notes.n1.version).toBe(3);
+  });
+
+  test('hydrated notes keep their version for conflict checks', () => {
+    const store = new BoardStore();
+    store.hydrate('a', { notes: { n1: { id: 'n1', x: 0, y: 0, text: '', version: 3, lockedBy: null } } });
+    store.lockNote('a', 'n1', { id: 'alice' });
+    expect(store.commitNote('a', 'n1', 'alice', 1, { x: 5 }).reason).toBe('stale');
+  });
+});

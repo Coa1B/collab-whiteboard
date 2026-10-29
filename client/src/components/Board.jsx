@@ -107,6 +107,7 @@ export default function Board({ boardId, tool, color }) {
   const handleMouseUp = () => {
     if (!drawing.current) return;
     pointBatcher.flush();
+    socket.emit('stroke:end', { id: drawing.current.id });
     drawing.current = null;
   };
 

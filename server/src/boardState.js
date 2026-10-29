@@ -1,5 +1,5 @@
-// In-memory board state, keyed by board id.
-// TODO: persist to PostgreSQL.
+// In-memory board state, keyed by board id. This is the live copy used for
+// real-time sync; see db/persistence.js for durable storage.
 class BoardStore {
   constructor() {
     this.boards = new Map();
@@ -10,6 +10,19 @@ class BoardStore {
       this.boards.set(boardId, { strokes: [], notes: {} });
     }
     return this.boards.get(boardId);
+  }
+
+  has(boardId) {
+    return this.boards.has(boardId);
+  }
+
+  // Seeds a board from saved data, e.g. after a server restart.
+  hydrate(boardId, { strokes = [], notes = {} }) {
+    this.boards.set(boardId, { strokes: [...strokes], notes: { ...notes } });
+  }
+
+  findStroke(boardId, strokeId) {
+    return this.get(boardId).strokes.find((s) => s.id === strokeId) || null;
   }
 
   addStroke(boardId, stroke) {
