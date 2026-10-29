@@ -4,6 +4,7 @@ import { socket } from '../socket';
 import { me } from '../identity';
 import { throttle } from '../utils/throttle';
 import { createBatcher } from '../utils/batcher';
+import { useWindowSize } from '../hooks/useWindowSize';
 import Cursors from './Cursors';
 import StickyNote, { NOTE_WIDTH, NOTE_HEIGHT } from './StickyNote';
 
@@ -13,6 +14,7 @@ const NOTE_MOVE_THROTTLE_MS = 50;
 const NOTE_COLOR = '#fff59d';
 
 export default function Board({ boardId, tool, color }) {
+  const { width, height } = useWindowSize();
   const [strokes, setStrokes] = useState([]);
   const [cursors, setCursors] = useState({});
   const [notes, setNotes] = useState({});
@@ -167,8 +169,8 @@ export default function Board({ boardId, tool, color }) {
   return (
     <>
       <Stage
-        width={window.innerWidth}
-        height={window.innerHeight}
+        width={width}
+        height={height}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
