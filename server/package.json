@@ -7,15 +7,18 @@
     "dev": "node --watch --env-file-if-exists=.env src/index.js",
     "start": "node --env-file-if-exists=.env src/index.js",
     "test": "jest",
-    "test:db": "jest tests/persistence.test.js --setupFiles ./tests/loadEnv.js"
+    "test:integration": "jest tests/persistence.test.js tests/redisStore.test.js tests/multiInstance.test.js --setupFiles ./tests/loadEnv.js"
   },
   "dependencies": {
+    "@socket.io/redis-adapter": "^8.3.0",
     "cors": "^2.8.5",
     "express": "^4.21.2",
+    "ioredis": "^5.11.1",
     "pg": "^8.23.1",
     "socket.io": "^4.8.1"
   },
   "devDependencies": {
-    "jest": "^29.7.0"
+    "jest": "^29.7.0",
+    "socket.io-client": "^4.8.4"
   }
 }

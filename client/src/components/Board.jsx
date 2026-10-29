@@ -12,6 +12,8 @@ const CURSOR_THROTTLE_MS = 50;
 const STROKE_BATCH_MS = 40;
 const NOTE_MOVE_THROTTLE_MS = 50;
 const NOTE_COLOR = '#fff59d';
+// Server locks expire after 60s; renew well before that while editing.
+const LOCK_REFRESH_MS = 20_000;
 
 export default function Board({ boardId, tool, color }) {
   const { width, height } = useWindowSize();
@@ -112,6 +114,13 @@ export default function Board({ boardId, tool, color }) {
     socket.emit('stroke:end', { id: drawing.current.id });
     drawing.current = null;
   };
+
+  // Keep the lock alive for as long as the editor is open.
+  useEffect(() => {
+    if (!editingId) return undefined;
+    const timer = setInterval(() => socket.emit('note:lock', { id: editingId, ...me }), LOCK_REFRESH_MS);
+    return () => clearInterval(timer);
+  }, [editingId]);
 
   const isLockedByOther = (note) => Boolean(note.lockedBy && note.lockedBy.id !== socket.id);
 

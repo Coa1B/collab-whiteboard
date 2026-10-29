@@ -1,5 +1,10 @@
 import { io } from 'socket.io-client';
 
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:4000';
+// ?server=http://localhost:4001 points this window at a specific server
+// instance, handy for demoing several instances sharing Redis.
+const SERVER_URL =
+  new URLSearchParams(window.location.search).get('server') ||
+  import.meta.env.VITE_SERVER_URL ||
+  'http://localhost:4000';
 
 export const socket = io(SERVER_URL, { autoConnect: false });
